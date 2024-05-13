@@ -1,4 +1,4 @@
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
@@ -50,6 +50,13 @@ async function run() {
         app.get('/myFood/:email', async (req, res) => {
             const query = { adder_email: req.params.email }
             const result = await foodCollection.find(query).toArray()
+            res.send(result)
+        })
+
+        // get food item based on id
+        app.get('/single-food/:id', async (req, res) => {
+            const query = { _id: new ObjectId(req.params.id) }
+            const result = await foodCollection.findOne(query);
             res.send(result)
         })
 
