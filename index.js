@@ -46,6 +46,13 @@ async function run() {
             res.send(result)
         })
 
+        // get food item based on user email
+        app.get('/myFood/:email', async (req, res) => {
+            const query = { adder_email: req.params.email }
+            const result = await foodCollection.find(query).toArray()
+            res.send(result)
+        })
+
         // Send a ping to confirm a successful connection
         await client.db("admin").command({ ping: 1 });
         console.log("Pinged your deployment. You successfully connected to MongoDB!");
