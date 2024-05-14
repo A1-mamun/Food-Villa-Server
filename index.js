@@ -53,6 +53,13 @@ async function run() {
             res.send(result)
         })
 
+        // get purchased food item based on user email
+        app.get('/myPurchasedFood/:email', async (req, res) => {
+            const query = { Buyer_email: req.params.email }
+            const result = await purchaseCollection.find(query).toArray()
+            res.send(result)
+        })
+
         // get food item based on id
         app.get('/single-food/:id', async (req, res) => {
             const query = { _id: new ObjectId(req.params.id) }
