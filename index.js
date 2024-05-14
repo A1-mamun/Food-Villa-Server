@@ -29,6 +29,8 @@ async function run() {
         // collections
         const foodCollection = client.db('foodVillaDb').collection('Foods');
         const purchaseCollection = client.db('foodVillaDb').collection('purchases');
+        const feedbackCollection = client.db('foodVillaDb').collection('feedbacks');
+
 
 
         // get all food from db
@@ -64,6 +66,11 @@ async function run() {
         app.get('/single-food/:id', async (req, res) => {
             const query = { _id: new ObjectId(req.params.id) }
             const result = await foodCollection.findOne(query);
+            res.send(result)
+        })
+        // get food item based on id
+        app.get('/feedbacks', async (req, res) => {
+            const result = await feedbackCollection.find().toArray();
             res.send(result)
         })
 
