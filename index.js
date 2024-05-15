@@ -95,6 +95,25 @@ async function run() {
             res.send(result)
         })
 
+        // update food based on id
+        app.put('/update/:id', async (req, res) => {
+            const query = { _id: new ObjectId(req.params.id) }
+            const updatedFood = req.body
+            const food = {
+                $set: {
+                    name: updatedFood.name,
+                    image: updatedFood.image,
+                    category: updatedFood.category,
+                    origin: updatedFood.origin,
+                    price: updatedFood.price,
+                    made_by: updatedFood.made_by,
+                    quantity: updatedFood.quantity,
+                    details: updatedFood.details,
+                }
+            }
+            const result = await foodCollection.updateOne(query, food);
+            res.send(result)
+        })
         // delete item based on id
         app.delete('/delete/:id', async (req, res) => {
             console.log(req.params.id)
