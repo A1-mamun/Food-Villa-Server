@@ -35,7 +35,9 @@ async function run() {
 
         // get all food from db
         app.get('/foods', async (req, res) => {
-            const result = await foodCollection.find().toArray();
+            const search = req.query.search;
+            const foodQuery = { name: { $regex: search, $options: 'i' } }
+            const result = await foodCollection.find(foodQuery).toArray();
             res.send(result)
         })
 
