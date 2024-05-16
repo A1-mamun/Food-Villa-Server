@@ -7,7 +7,7 @@ const app = express();
 
 // middleware
 app.use(cors({
-    origin: ['http://localhost:5173', 'http://localhost:5174'],
+    origin: ['http://localhost:5173', 'http://localhost:5174', 'https://food-villa-5b01d.web.app', 'https://food-villa-5b01d.firebaseapp.com'],
     credentials: true,
     optionsSuccessStatus: 200
 }))
@@ -77,7 +77,22 @@ async function run() {
         // post purchase food item
         app.post('/purchase', async (req, res) => {
             const newPurchase = req.body;
+            const id = newPurchase.foodId;
+            const purchaseQuantity = newPurchase.quantity;
             const result = await purchaseCollection.insertOne(newPurchase);
+            // update purchase count in foodcollection
+
+            const foodQuery = { _id: new ObjectId(id) };
+
+            const updateDoc = {
+
+                $inc: {
+                    purchase_count: purchaseQuantity,
+                    quantity: -purchaseQuantity
+                }
+
+            }
+            const updatePurchaseCount = await foodCollection.updateOne(foodQuery, updateDoc)
             res.send(result)
         })
 
@@ -123,7 +138,7 @@ async function run() {
         })
 
         // Send a ping to confirm a successful connection
-        await client.db("admin").command({ ping: 1 });
+        // await client.db("admin").command({ ping: 1 });
         console.log("Pinged your deployment. You successfully connected to MongoDB!");
     } finally {
         // Ensures that the client will close when you finish/error
