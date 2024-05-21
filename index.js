@@ -1,6 +1,8 @@
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const express = require('express');
 const cors = require('cors');
+const jwt = require('jsonwebtoken');
+const cookieParser = require('cookie-parser')
 require('dotenv').config();
 const port = process.env.PORT || 5000
 const app = express();
@@ -12,6 +14,7 @@ app.use(cors({
     optionsSuccessStatus: 200
 }))
 app.use(express.json())
+app.use(cookieParser())
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.xrf0qev.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 
@@ -24,6 +27,28 @@ const client = new MongoClient(uri, {
     }
 });
 
+
+// middleware jwt verify
+
+const verifyToken = (req, res, next) => {
+    const token = req.cookies?.token;
+    console.log(token)
+    if (!token) {
+        return res.status(401).send({ message: 'unauthorized access' });
+    }
+    if (token) {
+        jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
+            if (err) {
+                console.log(err)
+                return res.status(401).send({ message: 'unauthorized access' });
+            }
+            console.log(decoded)
+            req.user = decoded
+            next()
+        })
+    }
+}
+
 async function run() {
     try {
         // collections
@@ -31,8 +56,27 @@ async function run() {
         const purchaseCollection = client.db('foodVillaDb').collection('purchases');
         const feedbackCollection = client.db('foodVillaDb').collection('feedbacks');
 
+        // auth related api
+        app.post('/jwt', async (req, res) => {
+            const user = req.body;
+            const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '7d' })
+            res.cookie('token', token, {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === 'production',
+                sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict'
+            }).send({ success: true })
+        })
 
+        app.get('/logOut', (req, res) => {
+            res.clearCookie('token', {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === 'production',
+                sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
+                maxAge: 0
+            }).send({ success: true })
+        })
 
+        // service related api
         // get all food from db
         app.get('/foods', async (req, res) => {
             const search = req.query.search;
@@ -40,6 +84,7 @@ async function run() {
             const result = await foodCollection.find(foodQuery).toArray();
             res.send(result)
         })
+
 
         // get top foods item by sorting based on purchase count
         app.get('/top-foods', async (req, res) => {
@@ -51,15 +96,27 @@ async function run() {
         })
 
         // get food item based on user email
-        app.get('/myFood/:email', async (req, res) => {
-            const query = { adder_email: req.params.email }
+        app.get('/myFood', verifyToken, async (req, res) => {
+            const tokenEmail = req.user.email;
+            const userEmail = req.query?.email
+            if (tokenEmail !== userEmail) {
+                return res.status(403).send({ message: 'forbidden access' });
+            }
+            let query = {}
+            if (req.query?.email) { query = { adder_email: req.query.email } }
             const result = await foodCollection.find(query).toArray()
             res.send(result)
         })
 
         // get purchased food item based on user email
-        app.get('/myPurchasedFood/:email', async (req, res) => {
-            const query = { Buyer_email: req.params.email }
+        app.get('/myPurchasedFood', verifyToken, async (req, res) => {
+            const tokenEmail = req.user.email;
+            const userEmail = req.query?.email
+            if (tokenEmail !== userEmail) {
+                return res.status(403).send({ message: 'forbidden access' });
+            }
+            let query = {}
+            if (req.query?.email) { query = { Buyer_email: req.query.email } }
             const result = await purchaseCollection.find(query).toArray()
             res.send(result)
         })
